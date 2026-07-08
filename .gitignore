@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+/node_modules/
+package-lock.json
+
+# Frontend build outputs
+/frontend/dist/
+/frontend/dist-ssr/
+/frontend/node_modules/
+
+# Python backend (Virtual environments, caches, compiled files)
+backend/__pycache__/
+backend/uploads/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.noserc
+.venv/
+venv/
+ENV/
+env/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editors and IDEs
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db

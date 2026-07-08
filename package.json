@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "@tanstack/react-query": "^5.101.2",
+    "axios": "^1.18.1",
+    "echarts": "^6.1.0",
+    "framer-motion": "^12.42.2",
+    "react-router-dom": "^7.18.1",
+    "tailwindcss": "^4.3.2"
+  }
+}
