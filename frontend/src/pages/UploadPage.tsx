@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
+import { useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
 type FilePreviewRow = string[]
 
@@ -39,6 +41,7 @@ function parseCsvPreview(text: string) {
 }
 
 export function UploadPage() {
+  const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -62,33 +65,6 @@ export function UploadPage() {
       { label: 'File type', value: selectedFile.type || getExtension(selectedFile.name).toUpperCase() },
     ]
   }, [selectedFile])
-
-  useEffect(() => {
-    if (!isUploading) {
-      return undefined
-    }
-
-    const timer = window.setInterval(() => {
-      setUploadProgress((current) => {
-        if (current >= 100) {
-          setIsUploading(false)
-          return 100
-        }
-
-        const nextValue = Math.min(current + 12, 100)
-
-        if (nextValue === 100) {
-          setIsUploading(false)
-        }
-
-        return nextValue
-      })
-    }, 180)
-
-    return () => {
-      window.clearInterval(timer)
-    }
-  }, [isUploading])
 
   function resetSelection() {
     setSelectedFile(null)
@@ -130,16 +106,47 @@ export function UploadPage() {
     }
   }
 
-  function startUpload() {
+  async function startUpload() {
     if (!selectedFile) {
       setErrorMessage('Choose a file before starting the upload.')
       return
     }
 
     setErrorMessage('')
-    setUploadProgress(12)
+    setUploadProgress(0)
     setIsUploading(true)
+
+    const formData = new FormData()
+    formData.append('file', selectedFile)
+
+    try {
+      const response = await axios.post('http://localhost:8000/api/v1/datasets/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = progressEvent.total
+            ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            : 50
+          setUploadProgress(percentCompleted)
+        },
+      })
+
+      // Show completion briefly
+      setUploadProgress(100)
+      setTimeout(() => {
+        setIsUploading(false)
+        navigate(`/overview?fileId=${response.data.file_id}`)
+      }, 500)
+    } catch (error: any) {
+      setIsUploading(false)
+      setUploadProgress(0)
+      const errorMsg =
+        error.response?.data?.detail || error.message || 'An error occurred during upload.'
+      setErrorMessage(errorMsg)
+    }
   }
+
 
   function handleFileInputChange(event: ChangeEvent<HTMLInputElement>) {
     void handleFile(event.target.files?.[0])

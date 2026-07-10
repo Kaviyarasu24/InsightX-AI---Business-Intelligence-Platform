@@ -12,8 +12,8 @@
 - <span style="color: #10b981; font-size: 1.2em;">✅</span> **Configure Tailwind CSS, Framer Motion, Apache ECharts, and React Router.**
 - <span style="color: #10b981; font-size: 1.2em;">✅</span> **Build the Upload page.** <!-- Marked as completed -->
 - <span style="color: #10b981; font-size: 1.2em;">✅</span> **Create the FastAPI backend.**
-- [ ] Implement Excel/CSV upload APIs.
-- [ ] Parse datasets using Pandas.
+- <span style="color: #10b981; font-size: 1.2em;">✅</span> **Implement Excel/CSV upload APIs.**
+- <span style="color: #10b981; font-size: 1.2em;">✅</span> **Parse datasets using Pandas.**
 - [ ] Build automatic dataset profiling.
 - [ ] Create the interactive data table.
 - [ ] Generate dynamic dashboards.
