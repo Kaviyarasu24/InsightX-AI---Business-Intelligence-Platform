@@ -1,12 +1,16 @@
 import { motion } from 'framer-motion'
-import { NavLink, Outlet } from 'react-router-dom'
-
-const navigationItems = [
-  { label: 'Upload', to: '/upload' },
-  { label: 'Overview', to: '/overview' },
-]
+import { NavLink, Outlet, useSearchParams } from 'react-router-dom'
 
 export function AppShell() {
+  const [searchParams] = useSearchParams()
+  const fileId = searchParams.get('fileId')
+
+  const navigationItems = [
+    { label: 'Upload', to: fileId ? `/upload?fileId=${fileId}` : '/upload' },
+    { label: 'Overview', to: fileId ? `/overview?fileId=${fileId}` : '/overview' },
+    { label: 'Profiling', to: fileId ? `/profiling?fileId=${fileId}` : '/profiling' },
+  ]
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.18),_transparent_30%),radial-gradient(circle_at_right,_rgba(16,185,129,0.12),_transparent_28%)]" />

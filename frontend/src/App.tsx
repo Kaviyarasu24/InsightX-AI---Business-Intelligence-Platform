@@ -4,6 +4,7 @@ import { queryClient } from './services/queryClient'
 import { AppShell } from './layouts/AppShell'
 import { UploadPage } from './pages/UploadPage'
 import { OverviewPage } from './pages/OverviewPage'
+import { ProfilingPage } from './pages/ProfilingPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
             <Route index element={<Navigate to="/upload" replace />} />
             <Route path="upload" element={<UploadPage />} />
             <Route path="overview" element={<OverviewPage />} />
+            <Route path="profiling" element={<ProfilingPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

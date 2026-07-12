@@ -179,3 +179,190 @@ async def get_dataset_metadata(file_id: str):
         return metadata
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load dataset metadata: {str(e)}")
+
+
+@router.get("/{file_id}/profiling")
+async def get_dataset_profiling(file_id: str):
+    # Check cache first
+    profiling_path = settings.uploads_dir / f"datasets_{file_id}_profiling.json"
+    if profiling_path.exists():
+        try:
+            with open(profiling_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+
+    # Find the dataset spreadsheet file
+    file_path = None
+    original_filename = "dataset"
+    for ext in ["csv", "xlsx", "xls"]:
+        p = settings.uploads_dir / f"datasets_{file_id}.{ext}"
+        if p.exists():
+            file_path = p
+            break
+
+    if not file_path:
+        # Fallback: check if we can read the original filename from metadata
+        meta_path = settings.uploads_dir / f"datasets_{file_id}_meta.json"
+        if meta_path.exists():
+            try:
+                with open(meta_path, "r", encoding="utf-8") as f:
+                    meta = json.load(f)
+                    original_filename = meta.get("filename", "dataset")
+            except Exception:
+                pass
+        raise HTTPException(status_code=404, detail="Dataset file not found")
+
+    ext = file_path.suffix.lower()
+    try:
+        if ext == ".csv":
+            df = pd.read_csv(file_path)
+        else:
+            df = pd.read_excel(file_path)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read dataset file: {str(e)}")
+
+    try:
+        total_rows = len(df)
+        total_cols = len(df.columns)
+
+        # Calculate correlation matrix for numeric columns
+        numeric_df = df.select_dtypes(include=[np.number])
+        correlation = {}
+        if len(numeric_df.columns) > 1:
+            corr_df = numeric_df.corr().fillna(0)
+            correlation = {
+                "columns": list(corr_df.columns),
+                "values": [[to_json_val(val) for val in row] for row in corr_df.values.tolist()]
+            }
+
+        columns_profiling = {}
+        warnings = []
+
+        for col_name in df.columns:
+            series = df[col_name]
+            dtype = series.dtype
+            col_type = get_column_type(dtype, series)
+
+            n_missing = int(series.isna().sum())
+            pct_missing = round((n_missing / total_rows) * 100, 2) if total_rows > 0 else 0.0
+            n_unique = int(series.nunique())
+
+            col_data = {
+                "name": col_name,
+                "type": col_type,
+                "missing_count": n_missing,
+                "missing_percent": pct_missing,
+                "unique_count": n_unique,
+            }
+
+            # Data Quality warnings
+            if pct_missing > 50:
+                warnings.append({
+                    "column": col_name,
+                    "type": "High Missing Values",
+                    "severity": "High",
+                    "message": f"Column '{col_name}' has {pct_missing:.1f}% missing values."
+                })
+            elif pct_missing > 10:
+                warnings.append({
+                    "column": col_name,
+                    "type": "Missing Values Warning",
+                    "severity": "Medium",
+                    "message": f"Column '{col_name}' has {pct_missing:.1f}% missing values."
+                })
+
+            if n_unique == 1:
+                warnings.append({
+                    "column": col_name,
+                    "type": "Constant Column",
+                    "severity": "Medium",
+                    "message": f"Column '{col_name}' contains only a single unique value."
+                })
+            elif n_unique > 0 and col_type == "Text" and (n_unique / total_rows) > 0.95 and total_rows > 10:
+                warnings.append({
+                    "column": col_name,
+                    "type": "High Cardinality Text",
+                    "severity": "Low",
+                    "message": f"Column '{col_name}' has very high cardinality ({n_unique} unique values). It might be an ID or key column."
+                })
+
+            # Column specific profiling
+            if col_type == "Numeric":
+                non_null_series = series.dropna()
+                mean_val = float(non_null_series.mean()) if not non_null_series.empty else 0.0
+                std_val = float(non_null_series.std()) if len(non_null_series) > 1 else 0.0
+                min_val = float(non_null_series.min()) if not non_null_series.empty else 0.0
+                max_val = float(non_null_series.max()) if not non_null_series.empty else 0.0
+                median_val = float(non_null_series.median()) if not non_null_series.empty else 0.0
+                q25 = float(non_null_series.quantile(0.25)) if not non_null_series.empty else 0.0
+                q75 = float(non_null_series.quantile(0.75)) if not non_null_series.empty else 0.0
+                skew = float(non_null_series.skew()) if len(non_null_series) > 2 else 0.0
+                kurtosis = float(non_null_series.kurtosis()) if len(non_null_series) > 3 else 0.0
+
+                if abs(skew) > 1.5:
+                    warnings.append({
+                        "column": col_name,
+                        "type": "High Skewness",
+                        "severity": "Low",
+                        "message": f"Column '{col_name}' has high skewness ({skew:.2f})."
+                    })
+
+                distribution = []
+                if not non_null_series.empty:
+                    counts, bin_edges = np.histogram(non_null_series, bins=10)
+                    for i in range(len(counts)):
+                        distribution.append({
+                            "range": f"{bin_edges[i]:.2f} - {bin_edges[i+1]:.2f}",
+                            "count": int(counts[i])
+                        })
+
+                col_data["stats"] = {
+                    "mean": to_json_val(mean_val),
+                    "std": to_json_val(std_val),
+                    "min": to_json_val(min_val),
+                    "max": to_json_val(max_val),
+                    "median": to_json_val(median_val),
+                    "q25": to_json_val(q25),
+                    "q75": to_json_val(q75),
+                    "skew": to_json_val(skew),
+                    "kurtosis": to_json_val(kurtosis)
+                }
+                col_data["distribution"] = distribution
+            else:
+                # Text or Datetime: Top categories distribution
+                vc = series.value_counts(dropna=True).head(15)
+                distribution = [{"range": str(k), "count": int(v)} for k, v in vc.items()]
+                col_data["distribution"] = distribution
+
+            columns_profiling[col_name] = col_data
+
+        # Get original filename from meta if possible
+        meta_path = settings.uploads_dir / f"datasets_{file_id}_meta.json"
+        if meta_path.exists():
+            try:
+                with open(meta_path, "r", encoding="utf-8") as f:
+                    meta = json.load(f)
+                    original_filename = meta.get("filename", file_path.name)
+            except Exception:
+                pass
+
+        profile_data = {
+            "file_id": file_id,
+            "filename": original_filename,
+            "total_rows": total_rows,
+            "total_columns": total_cols,
+            "correlation": correlation,
+            "columns": columns_profiling,
+            "warnings": warnings
+        }
+
+        # Cache the result
+        with open(profiling_path, "w", encoding="utf-8") as f:
+            json.dump(profile_data, f, indent=2)
+
+        return profile_data
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate dataset profiling: {str(e)}")
+

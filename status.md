@@ -14,7 +14,7 @@
 - <span style="color: #10b981; font-size: 1.2em;">✅</span> **Create the FastAPI backend.**
 - <span style="color: #10b981; font-size: 1.2em;">✅</span> **Implement Excel/CSV upload APIs.**
 - <span style="color: #10b981; font-size: 1.2em;">✅</span> **Parse datasets using Pandas.**
-- [ ] Build automatic dataset profiling.
+- <span style="color: #10b981; font-size: 1.2em;">✅</span> **Build automatic dataset profiling.**
 - [ ] Create the interactive data table.
 - [ ] Generate dynamic dashboards.
 - [ ] Implement AI-powered insights.
