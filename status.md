@@ -15,7 +15,7 @@
 - <span style="color: #10b981; font-size: 1.2em;">✅</span> **Implement Excel/CSV upload APIs.**
 - <span style="color: #10b981; font-size: 1.2em;">✅</span> **Parse datasets using Pandas.**
 - <span style="color: #10b981; font-size: 1.2em;">✅</span> **Build automatic dataset profiling.**
-- [ ] Create the interactive data table.
+- <span style="color: #10b981; font-size: 1.2em;">✅</span> **Create the interactive data table.**
 - [ ] Generate dynamic dashboards.
 - [ ] Implement AI-powered insights.
 - [ ] Add natural language querying.
@@ -28,4 +28,4 @@
 ## Notes
 
 - The project spec is captured in `project.md`.
-- The workspace is currently in the setup phase, so the next work should focus on foundational frontend configuration.
+- Step 8 is completed. The next step is to generate dynamic dashboards (Step 9) using Apache ECharts.

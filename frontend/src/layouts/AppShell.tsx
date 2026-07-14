@@ -8,6 +8,7 @@ export function AppShell() {
   const navigationItems = [
     { label: 'Upload', to: fileId ? `/upload?fileId=${fileId}` : '/upload' },
     { label: 'Overview', to: fileId ? `/overview?fileId=${fileId}` : '/overview' },
+    { label: 'Data Table', to: fileId ? `/table?fileId=${fileId}` : '/table' },
     { label: 'Profiling', to: fileId ? `/profiling?fileId=${fileId}` : '/profiling' },
   ]
 

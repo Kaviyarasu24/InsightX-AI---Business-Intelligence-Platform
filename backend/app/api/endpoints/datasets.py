@@ -366,3 +366,127 @@ async def get_dataset_profiling(file_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate dataset profiling: {str(e)}")
 
+
+@router.get("/{file_id}/data")
+async def get_dataset_data(
+    file_id: str,
+    page: int = 1,
+    limit: int = 50,
+    sort_by: str = None,
+    sort_order: str = "asc",
+    search: str = None,
+    filters: str = None
+):
+    # Find dataset file
+    file_path = None
+    for ext in ["csv", "xlsx", "xls"]:
+        p = settings.uploads_dir / f"datasets_{file_id}.{ext}"
+        if p.exists():
+            file_path = p
+            break
+
+    if not file_path:
+        raise HTTPException(status_code=404, detail="Dataset file not found")
+
+    # Load dataset
+    ext = file_path.suffix.lower()
+    try:
+        if ext == ".csv":
+            df = pd.read_csv(file_path)
+        else:
+            df = pd.read_excel(file_path)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read dataset file: {str(e)}")
+
+    total_rows = len(df)
+
+    # 1. Global search
+    if search:
+        search_str = str(search).strip()
+        if search_str:
+            masks = []
+            for col in df.columns:
+                col_mask = df[col].astype(str).str.contains(search_str, case=False, na=False)
+                masks.append(col_mask)
+            if masks:
+                global_mask = pd.concat(masks, axis=1).any(axis=1)
+                df = df[global_mask]
+
+    # 2. Column-specific filters
+    if filters:
+        try:
+            filter_dict = json.loads(filters)
+            for col, val in filter_dict.items():
+                if col in df.columns:
+                    if isinstance(val, dict):
+                        # Numeric range filter: min and/or max
+                        if "min" in val and val["min"] is not None and val["min"] != "":
+                            df = df[pd.to_numeric(df[col], errors='coerce') >= float(val["min"])]
+                        if "max" in val and val["max"] is not None and val["max"] != "":
+                            df = df[pd.to_numeric(df[col], errors='coerce') <= float(val["max"])]
+                    elif isinstance(val, list):
+                        # Categorical multi-select filter
+                        if len(val) > 0:
+                            df = df[df[col].astype(str).isin([str(v) for v in val])]
+                    else:
+                        # Substring search filter
+                        if val is not None and val != "":
+                            df = df[df[col].astype(str).str.contains(str(val), case=False, na=False)]
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid JSON format for filters")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Filtering error: {str(e)}")
+
+    # 3. Sorting
+    if sort_by and sort_by in df.columns:
+        ascending = sort_order.lower() == "asc"
+        df = df.sort_values(by=sort_by, ascending=ascending, na_position="last")
+
+    total_filtered = len(df)
+
+    # Normalize pagination
+    page = max(1, page)
+    limit = max(1, min(100, limit))
+    start_idx = (page - 1) * limit
+    end_idx = page * limit
+
+    # Paginate slice
+    df_page = df.iloc[start_idx:end_idx]
+
+    # Get column definitions from metadata if available
+    columns_info = []
+    meta_path = settings.uploads_dir / f"datasets_{file_id}_meta.json"
+    if meta_path.exists():
+        try:
+            with open(meta_path, "r", encoding="utf-8") as f:
+                meta = json.load(f)
+                columns_info = meta.get("columns", [])
+        except Exception:
+            pass
+
+    # Fallback to df columns list if metadata was empty
+    if not columns_info:
+        for col_name in df.columns:
+            columns_info.append({
+                "name": col_name,
+                "type": "Text",  # Default fallback
+                "unique_count": int(df[col_name].nunique())
+            })
+
+    # Prepare JSON serializable rows
+    headers = list(df.columns)
+    rows = []
+    for _, row in df_page.iterrows():
+        rows.append([to_json_val(val) for val in row.values])
+
+    return {
+        "headers": headers,
+        "rows": rows,
+        "columns": columns_info,
+        "page": page,
+        "limit": limit,
+        "total_rows": total_rows,
+        "total_filtered": total_filtered
+    }
+
+
