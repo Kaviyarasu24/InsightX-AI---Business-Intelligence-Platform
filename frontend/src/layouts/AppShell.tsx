@@ -8,6 +8,9 @@ export function AppShell() {
   const navigationItems = [
     { label: 'Upload', to: fileId ? `/upload?fileId=${fileId}` : '/upload' },
     { label: 'Overview', to: fileId ? `/overview?fileId=${fileId}` : '/overview' },
+    { label: 'Dashboard', to: fileId ? `/dashboard?fileId=${fileId}` : '/dashboard' },
+    { label: 'AI Insights', to: fileId ? `/insights?fileId=${fileId}` : '/insights' },
+    { label: 'AI Chat', to: fileId ? `/chat?fileId=${fileId}` : '/chat' },
     { label: 'Data Table', to: fileId ? `/table?fileId=${fileId}` : '/table' },
     { label: 'Profiling', to: fileId ? `/profiling?fileId=${fileId}` : '/profiling' },
   ]
@@ -51,9 +54,9 @@ export function AppShell() {
           </nav>
 
           <div className="mt-auto rounded-3xl border border-white/10 bg-slate-900/80 p-5 shadow-2xl shadow-black/20">
-            <p className="text-sm font-medium text-white">Project status</p>
+            <p className="text-sm font-medium text-white">Platform Status</p>
             <p className="mt-2 text-sm leading-6 text-slate-300">
-              Step 2 is now wired. Next is the Upload page and file ingestion workflow.
+              AI insights enabled. Profile, dashboards and analytical summaries are live.
             </p>
           </div>
         </aside>

@@ -16,9 +16,9 @@
 - <span style="color: #10b981; font-size: 1.2em;">✅</span> **Parse datasets using Pandas.**
 - <span style="color: #10b981; font-size: 1.2em;">✅</span> **Build automatic dataset profiling.**
 - <span style="color: #10b981; font-size: 1.2em;">✅</span> **Create the interactive data table.**
-- [ ] Generate dynamic dashboards.
-- [ ] Implement AI-powered insights.
-- [ ] Add natural language querying.
+- <span style="color: #10b981; font-size: 1.2em;">✅</span> **Generate dynamic dashboards.**
+- <span style="color: #10b981; font-size: 1.2em;">✅</span> **Implement AI-powered insights.**
+- <span style="color: #10b981; font-size: 1.2em;">✅</span> **Add natural language querying.**
 - [ ] Implement forecasting.
 - [ ] Add anomaly detection.
 - [ ] Generate PDF reports.
@@ -28,4 +28,4 @@
 ## Notes
 
 - The project spec is captured in `project.md`.
-- Step 8 is completed. The next step is to generate dynamic dashboards (Step 9) using Apache ECharts.
+- Step 11 is completed (Natural language querying with sandboxed pandas execution and chat interface is functional). The next step is forecasting (Step 12).
